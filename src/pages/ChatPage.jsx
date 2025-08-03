@@ -21,7 +21,13 @@ function ChatPage() {
     connectWebSocket(
       (msg) => {
         // Avoid adding duplicate message objects (can adjust based on real key)
-        setMessages((prev) => [...prev, msg]);
+        setMessages(prev => {
+                      // Check if the message already exists (by sender and timestamp)
+                      if (prev.some(m => m.sender === msg.sender && m.timestamp === msg.timestamp)) {
+                        return prev;
+                      }
+                      return [...prev, msg];
+                    });
       },
       (client) => {
         stompClientRef.current = client;
@@ -50,7 +56,7 @@ function ChatPage() {
       body: JSON.stringify({
         sender: username,
         content: message,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(),
       }),
     });
 
