@@ -14,36 +14,45 @@ function ChatPage() {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    if (username) {
-      connectWebSocket(
-        (msg) => setMessages((prev) => [...prev, msg]),
-        (client) => {
-          stompClientRef.current = client;
+    if (!username) return;
+
+    let isSubscribed = false;
+
+    connectWebSocket(
+      (msg) => {
+        // Avoid adding duplicate message objects (can adjust based on real key)
+        setMessages((prev) => [...prev, msg]);
+      },
+      (client) => {
+        stompClientRef.current = client;
+
+        if (!isSubscribed) {
           client.publish({
             destination: '/api/chatter/chat/addUser',
-            body: JSON.stringify({ sender: username })
+            body: JSON.stringify({ sender: username }),
           });
+          isSubscribed = true;
         }
-      );
-    }
+      }
+    );
   }, [username]);
 
-//   useEffect(() => {
-//     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-//   }, [messages]);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const sendMessage = () => {
     const client = stompClientRef.current;
     if (!client || typeof client.publish !== 'function' || !message.trim()) return;
 
-   client.publish({
-     destination: '/api/chatter/chat/sendMessage',
-     body: JSON.stringify({
-       sender: username,
-       content: message,
-       timestamp: new Date().toISOString()
-     })
-   });
+    client.publish({
+      destination: '/api/chatter/chat/sendMessage',
+      body: JSON.stringify({
+        sender: username,
+        content: message,
+        timestamp: new Date().toISOString(),
+      }),
+    });
 
     setMessage('');
   };
@@ -60,6 +69,7 @@ function ChatPage() {
               <Typography variant="body2">{msg.content}</Typography>
             </Box>
           ))}
+          {/* Auto-scroll target */}
           <div ref={messagesEndRef} />
         </Paper>
 
